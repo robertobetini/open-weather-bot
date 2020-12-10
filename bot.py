@@ -2,7 +2,9 @@ import discord
 import requests
 import io
 import datetime
-from owapi import *
+
+from owapi import get_current_json, get_onecall_json
+from emotes import ID_to_emote
 
 client = discord.Client()
 
@@ -19,7 +21,7 @@ async def on_message(message):
     #################################
     msg = message.content.split(" ")
     channel = message.channel
-    author = message.author
+    # author = message.author
     mention = message.author.mention
     #################################
 
@@ -38,6 +40,7 @@ async def on_message(message):
         local = data['name']
         pais = data['sys']['country']
         tempo = data['weather'][0]['description']
+        emotes = ID_to_emote[data['weather'][0]['id']]
         temperatura = round(float(data['main']['temp']), 1)
         sensacao = round(float(data['main']['feels_like']), 1)
         temp_min = round(float(data['main']['temp_min']), 1)
@@ -50,10 +53,9 @@ async def on_message(message):
           pressao = round(data['main']['pressure']/1000, 3)
 
         weather_string = f'''
-Tempo em **{local} ({pais})** (*latitude = {lat}, longitude = {lon}*)
+{tempo.capitalize()} {emotes} em **{local} ({pais})** (*latitude = {lat}, longitude = {lon}*)
 
 ```
-Tempo - {tempo}
 Temperatura - {temperatura}°C
 Sensação térmica - {sensacao}°C
 Temperaturas mínima e máxima - {temp_min} ~ {temp_max}°C
@@ -72,6 +74,31 @@ Nebulosidade - {nebulosidade}%
 
     if msg[0] == "!daily" and arg:
       data = get_onecall_json(arg, "daily")
-      print(data)
+
+      name_and_country = get_current_json(arg)
+      local = name_and_country['name']
+      pais = name_and_country['sys']['country']
+
+      reply = f"Previsão para os próximos 7 dias em **{local} ({pais})**:\n\n"
+
+      if data['cod'] == 200:
+        for day in data['daily'][1:]:
+          temp_dia = round(float(day['temp']['day']), 1)
+          temp_noite = round(float(day['temp']['night']), 1)
+          tempo = day['weather'][0]['description']
+          emotes = ID_to_emote[day['weather'][0]['id']]
+          data = datetime.datetime.fromtimestamp(day['dt'])
+
+          weekday_num_to_string = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sab", "Dom"]
+          dia = weekday_num_to_string[data.weekday()]
+
+          line = f"**{data.day}/{data.month} ({dia}):** {tempo.capitalize()} {emotes}\n"
+          line += f"\t:sunny:\t{temp_dia}°C\n"
+          line += f"\t:crescent_moon:\t{temp_noite}°C\n\n"
+          reply += line
+
+        await channel.send(reply[:-2])
+      else:
+        await channel.send(f"{mention} local -> **{arg}** <- não encontrado")
 
 client.run(DISCORD_TOKEN)

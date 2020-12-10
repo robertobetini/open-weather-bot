@@ -17,7 +17,7 @@ def get_current_json(city):
 
 def get_onecall_json(city, option):
   '''
-  options can be "minutely", "hourly", "daily", "current", "alerts"
+  Option can be "minutely", "hourly", "daily", "current", "alerts".
   '''
   # preparing for onecall
   city_info = get_current_json(city)
@@ -36,4 +36,6 @@ def get_onecall_json(city, option):
   query_string = f"lat={lat}&lon={lon}&exclude={exclude[:-1]}&appid={WEATHER_API_KEY}&units=metric&lang=pt_br"
   url = weather_onecall + query_string
   req = requests.get(url)
-  return req.json()
+  data = req.json()
+  data['cod'] = 200
+  return data
