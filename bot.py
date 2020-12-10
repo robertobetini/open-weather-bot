@@ -1,18 +1,12 @@
 import discord
 import requests
-import json
 import io
+import datetime
+from owapi import *
 
 client = discord.Client()
 
-WEATHER_API_KEY = "301b49bb262eddccc54eb7908961ad2b"
 DISCORD_TOKEN = "Nzg2MDM1ODAwMjk0MjkzNTI2.X9Ai4g.X2UjjxEraf0HQE-1F5XMNwkcnBw"
-
-# url = api + query_string
-weather_api = "https://api.openweathermap.org/data/2.5"
-weather_onecall = weather_api + "/onecall?"
-weather_daily = weather_api + "/forecast/daily?"
-weather_current = weather_api + "/weather?"
 
 @client.event
 async def on_ready():
@@ -29,18 +23,15 @@ async def on_message(message):
     mention = message.author.mention
     #################################
 
+  # concatenating the argument strings
     arg = ""
     for i in range(len(msg)):
       if i != 0:
         arg += msg[i] + " "
     arg = arg.strip()
-    if msg[0] == "!current":
-      query_string = f"q={arg}&appid={WEATHER_API_KEY}&units=metric&lang=pt_br"
-      url = weather_current + query_string
-      req = requests.get(url)
-
-      # all weather data are here in response
-      data = req.json()
+    
+    if msg[0] == "!current" and arg:
+      data = get_current_json(arg)
       if data['cod'] == 200:
         lat = data['coord']['lat']
         lon = data['coord']['lon']
@@ -78,5 +69,9 @@ Nebulosidade - {nebulosidade}%
         await channel.send(weather_string, file=icon)
       else:
         await channel.send(f"{mention} local -> **{arg}** <- não encontrado")
+
+    if msg[0] == "!daily" and arg:
+      data = get_onecall_json(arg, "daily")
+      print(data)
 
 client.run(DISCORD_TOKEN)
