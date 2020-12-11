@@ -130,9 +130,12 @@ Nebulosidade - {nebulosity}%
       save_path = "./img/minutes_graph.png"
       plt.savefig(save_path, dpi=128)
 
+      try:
+        os.mkdir("./img")
+
       img = open(save_path, "rb")
       await channel.send(f"Previsão de precipitação para os próximos 60 minutos em **{local} ({country})**:", file=discord.File(img, 'graph.png'))
       img.close()
       os.remove(save_path)
-      
+
 client.run(DISCORD_TOKEN)
