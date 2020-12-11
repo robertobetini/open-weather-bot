@@ -103,7 +103,7 @@ Nebulosidade - {nebulosity}%
       else:
         await channel.send(f"{mention} local -> **{arg}** <- não encontrado")
 
-    if msg[0] == "!minutely":
+    if msg[0] == "!minutely" and arg:
       data = get_onecall_json(arg, "minutely")
       
       name_and_country = get_current_json(arg)
@@ -112,32 +112,32 @@ Nebulosidade - {nebulosity}%
 
       minutos = []
       precipitacao = []      
+      if data['cod'] == 200:
+        for minute in data['minutely']:
+          date = datetime.datetime.fromtimestamp(minute['dt'])
+          hour = date.hour
+          minutes = date.minute
+          minutos.append(f"{hour}:{minutes}")
+          precipitacao.append(minute['precipitation'])
 
-      for minute in data['minutely']:
-        date = datetime.datetime.fromtimestamp(minute['dt'])
-        hour = date.hour
-        minutes = date.minute
-        minutos.append(f"{hour}:{minutes}")
-        precipitacao.append(minute['precipitation'])
+        plt.plot(minutos, precipitacao, color="blue", linewidth=3)
+        plt.title(f"Precipitação em {local} ({country})")
+        plt.ylim(bottom=0)
+        plt.xlabel("Tempo")
+        plt.ylabel("Precipitação (mm)")
+        plt.xticks([0, len(minutos)], [minutos[0], minutos[-1]])
 
-      plt.plot(minutos, precipitacao, color="blue", linewidth=3)
-      plt.title(f"Precipitação em {local} ({country})")
-      plt.ylim(bottom=0)
-      plt.xlabel("Tempo")
-      plt.ylabel("Precipitação (mm)")
-      plt.xticks([0, len(minutos)], [minutos[0], minutos[-1]])
+        try:
+          os.mkdir("./img")
+        except:
+          pass
 
-      save_path = "./img/minutes_graph.png"
-      plt.savefig(save_path, dpi=128)
+        save_path = "./img/minutes_graph.png"
+        plt.savefig(save_path, dpi=128)
 
-      try:
-        os.mkdir("./img")
-      except:
-        pass
-
-      img = open(save_path, "rb")
-      await channel.send(f"Previsão de precipitação para os próximos 60 minutos em **{local} ({country})**:", file=discord.File(img, 'graph.png'))
-      img.close()
-      os.remove(save_path)
+        img = open(save_path, "rb")
+        await channel.send(f"Previsão de precipitação para os próximos 60 minutos em **{local} ({country})**:", file=discord.File(img, 'graph.png'))
+        img.close()
+        os.remove(save_path)
 
 client.run(DISCORD_TOKEN)
