@@ -104,36 +104,39 @@ Nebulosidade - {nebulosity}%
         await channel.send(f"{mention} local -> **{arg}** <- não encontrado")
 
     if msg[0] == "!minutely" and arg:
+      try:
+        os.mkdir("./img")
+      except:
+        pass
+
       data = get_onecall_json(arg, "minutely")
       
       name_and_country = get_current_json(arg)
       local = name_and_country['name']
       country = name_and_country['sys']['country']
 
-      minutos = []
-      precipitacao = []      
       if data['cod'] == 200:
+        minutos = []
+        precipitacao = []
+        tdelta = datetime.timedelta(seconds=data['timezone_offset'])
         for minute in data['minutely']:
-          date = datetime.datetime.fromtimestamp(minute['dt'])
+          date = datetime.datetime.utcfromtimestamp(minute['dt'])
+          date += tdelta
           hour = date.hour
           minutes = date.minute
-          minutos.append(f"{hour}:{minutes}")
+          minutos.append(f"{hour}:{str(minutes).zfill(2)}")
           precipitacao.append(minute['precipitation'])
 
         plt.plot(minutos, precipitacao, color="blue", linewidth=3)
         plt.title(f"Precipitação em {local} ({country})")
         plt.ylim(bottom=0)
-        plt.xlabel("Tempo")
+        plt.xlabel("Horário local")
         plt.ylabel("Precipitação (mm)")
-        plt.xticks([0, len(minutos)], [minutos[0], minutos[-1]])
-
-        try:
-          os.mkdir("./img")
-        except:
-          pass
+        plt.xticks([0, len(minutos) - 1], [minutos[0], minutos[-1]])
 
         save_path = "./img/minutes_graph.png"
         plt.savefig(save_path, dpi=128)
+        plt.clf()
 
         img = open(save_path, "rb")
         await channel.send(f"Previsão de precipitação para os próximos 60 minutos em **{local} ({country})**:", file=discord.File(img, 'graph.png'))
