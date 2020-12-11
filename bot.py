@@ -1,12 +1,21 @@
 import discord
-import requests
 import io
+import requests
 import datetime
 import os
 
 from matplotlib import pyplot as plt
 from owapi import get_current_json, get_onecall_json
 from emotes import ID_to_emote
+from setup import init_settings, update_settings, save_settings
+from settings_validation import valid_units
+
+# Todo:
+#
+# 1. Make the bot create a config.txt file to store user preferences
+# 2. Make the bot read the file and set the preferences
+
+settings = init_settings()
 
 client = discord.Client()
 
@@ -27,15 +36,16 @@ async def on_message(message):
     mention = message.author.mention
     #################################
 
-  # concatenating the argument strings
+    # concatenating the argument strings
     arg = ""
     for i in range(len(msg)):
       if i != 0:
         arg += msg[i] + " "
     arg = arg.strip()
-    
+
+
     if msg[0] == "!current" and arg:
-      data = get_current_json(arg)
+      data = get_current_json(arg, settings)
       if data['cod'] == 200:
         lat = data['coord']['lat']
         lon = data['coord']['lon']
@@ -55,15 +65,15 @@ async def on_message(message):
           pressure = round(data['main']['pressure']/1000, 3)
 
         weather_string = f'''
-{description.capitalize()} {emotes} em **{local} ({country})** (*latitude = {lat}, longitude = {lon}*)
+{description.capitalize()} {emotes} at **{local} ({country})** (*latitude = {lat}, longitude = {lon}*)
 
 ```
-Temperatura - {temperature}°C
-Sensação térmica - {feels_like}°C
-Temperaturas mínima e máxima - {temp_min} ~ {temp_max}°C
-Pressão atmosférica - {pressure} bar
-Umidade relativa do ar - {humidity}%
-Nebulosidade - {nebulosity}%
+Temperature - {temperature}°C
+Feels like - {feels_like}°C
+Min and max temperatures - {temp_min} ~ {temp_max}°C
+Pressure - {pressure} bar
+Humidity - {humidity}%
+Nebulosity - {nebulosity}%
 ```
         '''
         icon_name = data['weather'][0]['icon']
@@ -72,16 +82,17 @@ Nebulosidade - {nebulosity}%
         icon = discord.File(io.BytesIO(icon), filename="icon.png")
         await channel.send(weather_string, file=icon)
       else:
-        await channel.send(f"{mention} local -> **{arg}** <- não encontrado")
+        await channel.send(f"{mention} local -> **{arg}** <- not found")
+
 
     if msg[0] == "!daily" and arg:
-      data = get_onecall_json(arg, "daily")
+      data = get_onecall_json(arg, "daily", settings)
 
       name_and_country = get_current_json(arg)
       local = name_and_country['name']
       country = name_and_country['sys']['country']
 
-      reply = f"Previsão para os próximos 7 dias em **{local} ({country})**:\n\n"
+      reply = f"Forecast for the next 7 days at **{local} ({country})**:\n\n"
 
       if data['cod'] == 200:
         for day in data['daily'][1:]:
@@ -91,17 +102,18 @@ Nebulosidade - {nebulosity}%
           emotes = ID_to_emote[day['weather'][0]['id']]
           date = datetime.datetime.fromtimestamp(day['dt'])
 
-          weekday_num_to_string = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sab", "Dom"]
+          weekday_num_to_string = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
           week_day = weekday_num_to_string[date.weekday()]
 
-          line = f"**{date.day}/{date.month} ({week_day}):** {description.capitalize()} {emotes}\n"
+          line = f"**{date.month}/{date.day} ({week_day}):** {description.capitalize()} {emotes}\n"
           line += f"\t:sunny:\t{temp_day}°C\n"
           line += f"\t:crescent_moon:\t{temp_night}°C\n\n"
           reply += line
 
         await channel.send(reply[:-2])
       else:
-        await channel.send(f"{mention} local -> **{arg}** <- não encontrado")
+        await channel.send(f"{mention} local -> **{arg}** <- not found")
+
 
     if msg[0] == "!minutely" and arg:
       try:
@@ -109,38 +121,49 @@ Nebulosidade - {nebulosity}%
       except:
         pass
 
-      data = get_onecall_json(arg, "minutely")
+      data = get_onecall_json(arg, "minutely", settings)
       
       name_and_country = get_current_json(arg)
       local = name_and_country['name']
       country = name_and_country['sys']['country']
 
       if data['cod'] == 200:
-        minutos = []
-        precipitacao = []
+        minutes = []
+        precipitation = []
         tdelta = datetime.timedelta(seconds=data['timezone_offset'])
         for minute in data['minutely']:
           date = datetime.datetime.utcfromtimestamp(minute['dt'])
           date += tdelta
           hour = date.hour
-          minutes = date.minute
-          minutos.append(f"{hour}:{str(minutes).zfill(2)}")
-          precipitacao.append(minute['precipitation'])
+          date_minutes = date.minute
+          minutes.append(f"{hour}:{str(date_minutes).zfill(2)}")
+          precipitation.append(minute['precipitation'])
 
-        plt.plot(minutos, precipitacao, color="blue", linewidth=3)
-        plt.title(f"Precipitação em {local} ({country})")
+        plt.plot(minutes, precipitation, color="blue", linewidth=3)
+        plt.title(f"Precipitation at {local} ({country})")
         plt.ylim(bottom=0)
-        plt.xlabel("Horário local")
-        plt.ylabel("Precipitação (mm)")
-        plt.xticks([0, len(minutos) - 1], [minutos[0], minutos[-1]])
+        plt.xlabel("Local time")
+        plt.ylabel("Precipitation (mm)")
+        plt.xticks([0, len(minutes) - 1], [minutes[0], minutes[-1]])
 
         save_path = "./img/minutes_graph.png"
         plt.savefig(save_path, dpi=128)
         plt.clf()
 
         img = open(save_path, "rb")
-        await channel.send(f"Previsão de precipitação para os próximos 60 minutos em **{local} ({country})**:", file=discord.File(img, 'graph.png'))
+        await channel.send(f"Precipitation forecast for the nex 60 minutes at **{local} ({country})**:", file=discord.File(img, 'graph.png'))
         img.close()
         os.remove(save_path)
+
+
+    if msg[0] == "!units" and arg:
+      if arg in valid_units:
+        update_settings(settings, units=arg)
+        save_settings(settings)
+        await channel.send(f"Unit system changed to **{arg}**")
+      elif arg == "help":
+        await channel.send("Availabe unit systems: standard, metric, imperial")
+      else:
+        await channel.send("Choose a valid unit system (!units help)")
 
 client.run(DISCORD_TOKEN)
