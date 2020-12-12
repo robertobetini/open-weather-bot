@@ -9,13 +9,13 @@ weather_onecall = weather_api + "/onecall?"
 weather_current = weather_api + "/weather?"
 
 
-def get_current_json(city, settings={"units": "metric", "lang": "en"}):
-  query_string = f"q={city}&appid={WEATHER_API_KEY}&units={settings['units']}&lang={settings['lang']}"
+def get_current_json(city, settings={"units": "metric"}):
+  query_string = f"q={city}&appid={WEATHER_API_KEY}&units={settings['units']}&lang=en"
   url = weather_current + query_string
   req = requests.get(url)
   return req.json()
 
-def get_onecall_json(city, option, settings={"units": "metric", "lang": "en"}):
+def get_onecall_json(city, option, settings={"units": "metric"}):
   '''
   Option can be "minutely", "hourly", "daily", "current", "alerts".
   '''
@@ -33,7 +33,7 @@ def get_onecall_json(city, option, settings={"units": "metric", "lang": "en"}):
     exclude += opt + ","
 
   # making a onecall call
-  query_string = f"lat={lat}&lon={lon}&exclude={exclude[:-1]}&appid={WEATHER_API_KEY}&units={settings['units']}&lang={settings['lang']}"
+  query_string = f"lat={lat}&lon={lon}&exclude={exclude[:-1]}&appid={WEATHER_API_KEY}&units={settings['units']}&lang=en"
   url = weather_onecall + query_string
   req = requests.get(url)
   data = req.json()

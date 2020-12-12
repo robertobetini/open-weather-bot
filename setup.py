@@ -1,5 +1,11 @@
 PATH = "./config.txt"
 
+TEMP_UNIT = {
+  "metric": "°C",
+  "imperial": "°F",
+  "standard": "K"
+}
+
 def init_settings():
   first_time_running = True 
 
