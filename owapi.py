@@ -1,6 +1,7 @@
 import requests
 
-WEATHER_API_KEY = "301b49bb262eddccc54eb7908961ad2b"
+from keys import WEATHER_API_KEY
+
 onecall_options = ["minutely", "hourly", "daily", "current", "alerts"]
 
 # url = api + query_string

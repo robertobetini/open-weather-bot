@@ -22,7 +22,6 @@ def init_settings():
   
   with open(PATH, "r") as file:
     for line in file:
-      print(line)
       attributes = line.split("=")
       if line[-1] == "\n":
         settings[attributes[0]] = attributes[1][:-1]
