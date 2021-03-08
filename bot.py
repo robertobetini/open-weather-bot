@@ -24,13 +24,11 @@ async def on_message(message):
     msg = message.content
 
     if client.user.id in message.raw_mentions:
-      await message.channel.send("Available commands: !current, !minutely, !hourly, !daily, !units\n**SPECIAL COMMAND: !verificarclima**")
-
+      await message.channel.send("Available commands: !current, !minutely, !hourly, !daily, !units")
 
     elif msg.startswith("!current"):
       local = msg.replace("!current", "").strip()
       await current(message, local)
-
 
     elif msg.startswith("!daily"):
       local = msg.replace("!daily", "").strip()
@@ -40,11 +38,9 @@ async def on_message(message):
       local = msg.replace("!hourly", "").strip()
       await hourly(message, local)
 
-
     elif msg.startswith("!minutely"):
       local = msg.replace("!minutely", "").strip()
       await minutely(message, local)
-
 
     elif msg.startswith("!units"):
       arg = msg.replace("!units", "").strip()
