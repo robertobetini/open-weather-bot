@@ -1,8 +1,12 @@
 import discord
+import os
 
-from keys import DISCORD_TOKEN
+from dotenv import load_dotenv
 from commands import current, daily, hourly, minutely, units
 
+load_dotenv()
+
+DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 client = discord.Client()
 
 @client.event
@@ -19,31 +23,32 @@ async def on_ready():
 
 @client.event
 async def on_message(message):
-  if message.author != client.user:
+  if message.author == client.user:
+    return
 
-    msg = message.content
+  msg = message.content
 
-    if client.user.id in message.raw_mentions:
-      await message.channel.send("Available commands: !current, !minutely, !hourly, !daily, !units")
+  if client.user.id in message.raw_mentions:
+    await message.channel.send("Available commands: !current, !minutely, !hourly, !daily, !units")
 
-    elif msg.startswith("!current"):
-      local = msg.replace("!current", "").strip()
-      await current(message, local)
+  elif msg.startswith("!current"):
+    local = msg.replace("!current", "").strip()
+    await current(message, local)
 
-    elif msg.startswith("!daily"):
-      local = msg.replace("!daily", "").strip()
-      await daily(message, local)
+  elif msg.startswith("!daily"):
+    local = msg.replace("!daily", "").strip()
+    await daily(message, local)
 
-    elif msg.startswith("!hourly"):
-      local = msg.replace("!hourly", "").strip()
-      await hourly(message, local)
+  elif msg.startswith("!hourly"):
+    local = msg.replace("!hourly", "").strip()
+    await hourly(message, local)
 
-    elif msg.startswith("!minutely"):
-      local = msg.replace("!minutely", "").strip()
-      await minutely(message, local)
+  elif msg.startswith("!minutely"):
+    local = msg.replace("!minutely", "").strip()
+    await minutely(message, local)
 
-    elif msg.startswith("!units"):
-      arg = msg.replace("!units", "").strip()
-      await units(message, arg)
+  elif msg.startswith("!units"):
+    arg = msg.replace("!units", "").strip()
+    await units(message, arg)
 
 client.run(DISCORD_TOKEN)

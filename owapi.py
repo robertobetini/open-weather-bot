@@ -1,6 +1,11 @@
 import requests
+import os
 
-from keys import WEATHER_API_KEY
+from dotenv import load_dotenv
+
+load_dotenv()
+
+WEATHER_API_KEY = os.getenv("WEATHER_API_KEY")
 
 onecall_options = ["minutely", "hourly", "daily", "current", "alerts"]
 
